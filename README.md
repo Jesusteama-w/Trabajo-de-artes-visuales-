@@ -4,7 +4,17 @@ App para el trabajo de artes visuales: arrancás con un bloque de arcilla digita
 
 ## Cómo abrirla
 
-Abrí `index.html` en el navegador (Chrome, Edge, Firefox o Safari). Necesita internet la primera vez para cargar Three.js.
+Abrí `index.html` en el navegador (Chrome, Edge, Firefox o Safari). Necesita internet para cargar Three.js.
+
+### Publicarla como página web (GitHub Pages)
+
+1. En GitHub: **Settings → General → Danger Zone → Change visibility → Public** (Pages gratis sólo funciona con repos públicos).
+2. **Settings → Pages → Build and deployment → Source: Deploy from a branch**, elegí la rama `ccr-2fe21f6d-bobdog` y la carpeta `/ (root)`, y tocá **Save**.
+3. En un par de minutos la página queda en `https://jesusteama-w.github.io/Trabajo-de-artes-visuales-/`.
+
+## Reiniciar
+
+El botón **Reiniciar** (arriba) vuelve al bloque del principio. Si lo tocaste sin querer, **Deshacer** recupera la escultura.
 
 ## Herramientas
 

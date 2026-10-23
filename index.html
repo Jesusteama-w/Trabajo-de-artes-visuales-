@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Modelá un bloque de arcilla digital y sacale fotos desde todos los ángulos para el boceto de tu escultura.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232C5AA6' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 3 20 7.5v9L12 21l-8-4.5v-9z'/%3E%3Cpath d='M4 7.5 12 12l8-4.5M12 12v9'/%3E%3C/svg%3E">
 </head>
 <body>
 <!--APP-START-->
@@ -167,6 +169,7 @@ select { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1px solid va
   .panel { position: fixed; z-index: 40; right: 0; left: 0; bottom: 0; top: 30%; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.25); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateY(105%); transition: transform .22s ease; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
   .panel.open { transform: none; }
   .hint { display: none; }
+  .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 92px); }
   .hud { justify-content: flex-end; }
   .viewcube { grid-template-columns: repeat(3, auto); }
 }
@@ -183,6 +186,7 @@ select { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1px solid va
     <div class="spacer"></div>
     <button class="tbtn icon" id="btn-undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
     <button class="tbtn icon" id="btn-redo" title="Rehacer (Ctrl+Shift+Z)" aria-label="Rehacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <button class="tbtn" id="btn-reset" aria-label="Reiniciar" title="Volver al bloque de arcilla del principio (se puede deshacer)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span class="wide-only">Reiniciar</span></button>
     <button class="tbtn wide-only" id="btn-save" title="Guardar la escultura en un archivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>Guardar</button>
     <button class="tbtn wide-only" id="btn-open" title="Abrir una escultura guardada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4 4 4"/><path d="M5 21h14"/></svg>Abrir</button>
     <input type="file" id="file-open" accept=".json,application/json" hidden>
@@ -944,6 +948,19 @@ $("#file-open").addEventListener("change", async e => {
   try { loadProject(JSON.parse(await f.text())); scheduleSave(); toast("Escultura abierta: " + f.name); }
   catch (_) { toast("Ese archivo no es una escultura del Taller de Arcilla. Elegí un .json guardado desde acá."); }
 });
+
+/* ================= reiniciar ================= */
+function resetBlock() {
+  if (stroke) endStroke();
+  pushUndo();
+  P.set(makeBlockData(S.dims, S.res).positions);
+  for (let k = 0; k < 3; k++) smoothAll(0.5);
+  dirty = true;
+  camera.position.copy(controls.target.set(0, 0, 0)).add(new THREE.Vector3(3.4, 2.5, 4.4).setLength(fitted || 6.2));
+  scheduleSave();
+  toast("Volviste al bloque del principio. Si fue sin querer, tocá Deshacer.");
+}
+$("#btn-reset").addEventListener("click", resetBlock);
 
 /* ================= bloque nuevo ================= */
 $("#btn-new").addEventListener("click", () => {
