@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<!--APP-START-->
+<title>Taller de Arcilla</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gabarito:wght@600;800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: mesa de trabajo a pantalla completa; herramientas a la izquierda, ajustes a la derecha, barra superior fina. En el teléfono las herramientas bajan y los ajustes son un cajón. */
+:root {
+  --bg: #E6E9EE;
+  --panel: #F7F8FA;
+  --ink: #1B2130;
+  --muted: #5B6475;
+  --line: #D3D8E0;
+  --accent: #2C5AA6;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCE5F4;
+  --stage: #D9DEE5;
+  --danger: #B3362B;
+  --f-display: "Gabarito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151B; --panel: #1A1E26; --ink: #E7EAF0; --muted: #98A1B1; --line: #2B313D;
+    --accent: #86A8E8; --accent-ink: #0D1322; --accent-soft: #23304A; --stage: #1E232C; --danger: #F08A7E;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151B; --panel: #1A1E26; --ink: #E7EAF0; --muted: #98A1B1; --line: #2B313D;
+  --accent: #86A8E8; --accent-ink: #0D1322; --accent-soft: #23304A; --stage: #1E232C; --danger: #F08A7E;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; overflow: hidden; }
+* { box-sizing: border-box; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 312px;
+  grid-template-rows: 56px minmax(0, 1fr);
+  grid-template-areas: "top top top" "tools stage panel";
+}
+
+/* ---------- barra superior ---------- */
+.top {
+  grid-area: top; display: flex; align-items: center; gap: 12px;
+  padding-block: 0; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0;
+}
+.brand { font-family: var(--f-display); font-weight: 800; font-size: 19px; letter-spacing: -0.01em; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.brand svg { width: 22px; height: 22px; color: var(--accent); }
+.name { flex: 1 1 160px; min-width: 0; max-width: 300px; border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 6px 8px; color: var(--muted); }
+.name:hover, .name:focus { border-color: var(--line); background: var(--bg); color: var(--ink); }
+.top .spacer { flex: 1; }
+.tbtn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border: 1px solid var(--line); background: var(--panel); border-radius: 8px; white-space: nowrap;
+}
+.tbtn:hover:not(:disabled) { border-color: var(--accent); }
+.tbtn:disabled { opacity: .4; cursor: default; }
+.tbtn svg { width: 16px; height: 16px; }
+.tbtn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.tbtn.icon { padding: 0; width: 34px; justify-content: center; }
+.only-narrow { display: none !important; }
+
+/* ---------- herramientas ---------- */
+.tools {
+  grid-area: tools; background: var(--panel); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 8px; overflow-y: auto;
+}
+.tool {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 2px 6px; border: 1px solid transparent; border-radius: 10px; background: transparent;
+  font-size: 11.5px; font-weight: 500; color: var(--muted); position: relative;
+}
+.tool svg { width: 24px; height: 24px; }
+.tool:hover { color: var(--ink); background: var(--bg); }
+.tool[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.tool kbd { position: absolute; top: 3px; right: 5px; font-family: var(--f-mono); font-size: 9px; opacity: .55; }
+.tools hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; width: auto; }
+
+/* ---------- escenario ---------- */
+.stage { grid-area: stage; position: relative; background: var(--stage); min-width: 0; min-height: 0; overflow: hidden; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud {
+  position: absolute; left: 12px; bottom: 12px; right: 12px; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; pointer-events: none;
+}
+.hint { background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; max-width: 560px; line-height: 1.45; font-size: 12.5px; color: var(--muted); }
+.hint b { color: var(--ink); font-weight: 600; }
+.dims { font-family: var(--f-mono); font-size: 12px; background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dims span { color: var(--muted); }
+.viewcube { position: absolute; top: 12px; right: 12px; display: grid; grid-template-columns: repeat(3, auto); gap: 4px; }
+.viewcube button { font-size: 11.5px; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line); background: color-mix(in srgb, var(--panel) 90%, transparent); }
+.viewcube button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ---------- panel ---------- */
+.panel { grid-area: panel; background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 4px 18px 24px; }
+.sec { padding-block: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.sec:last-child { border-bottom: 0; }
+.sec h2 { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label, .lbl { font-size: 13px; font-weight: 500; }
+.val { font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; font-size: 13px; font-weight: 500; }
+.switch input { appearance: none; width: 34px; height: 20px; border-radius: 10px; background: var(--line); position: relative; cursor: pointer; flex: none; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--panel); transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(14px); }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--panel); box-shadow: 0 0 0 1px var(--line); }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 4px; font-size: 12.5px; border-left: 1px solid var(--line); }
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+select { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); }
+.big { height: 44px; justify-content: center; font-size: 15px; width: 100%; }
+.note { font-size: 12px; color: var(--muted); line-height: 1.45; margin: 0; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; color: var(--muted); }
+.keys kbd { font-family: var(--f-mono); font-size: 11px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; justify-self: start; }
+
+/* ---------- capas flotantes ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(10, 14, 22, .55); z-index: 50; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding-block: max(24px, env(safe-area-inset-top, 0px)) 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.sheet { background: var(--panel); border-radius: 14px; width: 100%; max-width: 1100px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.sheet.small { max-width: 440px; margin-top: 8vh; }
+.sheet header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.sheet header h3 { margin: 0; font-family: var(--f-display); font-weight: 800; font-size: 20px; flex: 1; min-width: 0; text-wrap: balance; }
+.sheet .body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.contact { width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.shot { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.shot img { width: 100%; aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: zoom-in; }
+.shot figcaption { font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.shot figcaption b { color: var(--ink); font-weight: 600; }
+.dimgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dimgrid input { width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-family: var(--f-mono); }
+.actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.zoom { position: fixed; inset: 0; z-index: 60; background: rgba(10,14,22,.85); display: flex; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out; }
+.zoom img { max-width: 100%; max-height: 100%; border-radius: 8px; background: #fff; }
+.toast { position: fixed; left: 50%; bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 13.5px; z-index: 70; max-width: calc(100% - 32px); }
+.busy { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--stage) 60%, transparent); font-family: var(--f-display); font-size: 18px; font-weight: 600; }
+
+/* ---------- teléfono ---------- */
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 52px minmax(0, 1fr) auto; grid-template-areas: "top" "stage" "tools"; }
+  .brand span, .name, .wide-only { display: none !important; }
+  .only-narrow { display: inline-flex !important; }
+  .tools { flex-direction: row; overflow-x: auto; overflow-y: hidden; border-right: 0; border-top: 1px solid var(--line); padding: 6px max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px)); }
+  .tool { min-width: 64px; }
+  .tool kbd, .tools hr { display: none; }
+  .panel { position: fixed; z-index: 40; right: 0; left: 0; bottom: 0; top: 30%; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -10px 40px rgba(0,0,0,.25); padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateY(105%); transition: transform .22s ease; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+  .panel.open { transform: none; }
+  .hint { display: none; }
+  .hud { justify-content: flex-end; }
+  .viewcube { grid-template-columns: repeat(3, auto); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 20 7.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg>
+      <span>Taller de Arcilla</span>
+    </div>
+    <input class="name" id="sculpt-name" value="Mi escultura" aria-label="Nombre de la escultura" maxlength="60">
+    <div class="spacer"></div>
+    <button class="tbtn icon" id="btn-undo" title="Deshacer (Ctrl+Z)" aria-label="Deshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button>
+    <button class="tbtn icon" id="btn-redo" title="Rehacer (Ctrl+Shift+Z)" aria-label="Rehacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/></svg></button>
+    <button class="tbtn wide-only" id="btn-save" title="Guardar la escultura en un archivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M5 21h14"/></svg>Guardar</button>
+    <button class="tbtn wide-only" id="btn-open" title="Abrir una escultura guardada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3m0 0L8 7m4-4 4 4"/><path d="M5 21h14"/></svg>Abrir</button>
+    <input type="file" id="file-open" accept=".json,application/json" hidden>
+    <button class="tbtn primary" id="btn-shoot-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span class="wide-only">Sacar fotos</span></button>
+    <button class="tbtn icon only-narrow" id="btn-panel" aria-label="Ajustes" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
+  </header>
+
+  <nav class="tools" id="tools" aria-label="Herramientas de modelado"></nav>
+
+  <main class="stage" id="stage">
+    <div class="viewcube" aria-label="Vistas rápidas">
+      <button data-view="0,0">Frente</button>
+      <button data-view="90,0">Derecha</button>
+      <button data-view="180,0">Atrás</button>
+      <button data-view="270,0">Izquierda</button>
+      <button data-view="0,89">Arriba</button>
+      <button data-view="35,25">¾</button>
+    </div>
+    <div class="hud">
+      <div class="hint" id="hint"></div>
+      <div class="dims" id="dims"></div>
+    </div>
+    <div class="busy" id="busy" hidden>Sacando fotos…</div>
+  </main>
+
+  <aside class="panel" id="panel" aria-label="Ajustes">
+    <section class="sec">
+      <h2>Pincel</h2>
+      <div class="field">
+        <div class="row"><label for="radius">Tamaño</label><span class="val" id="radius-val"></span></div>
+        <input type="range" id="radius" min="0.04" max="0.9" step="0.01" value="0.28">
+      </div>
+      <div class="field">
+        <div class="row"><label for="strength">Fuerza</label><span class="val" id="strength-val"></span></div>
+        <input type="range" id="strength" min="0.05" max="1" step="0.01" value="0.5">
+      </div>
+      <label class="switch">Simetría izquierda / derecha<input type="checkbox" id="sym" checked></label>
+      <label class="switch">Invertir efecto<input type="checkbox" id="invert"></label>
+    </section>
+
+    <section class="sec">
+      <h2>Fotos del boceto</h2>
+      <div class="field">
+        <label for="shot-set">Ángulos</label>
+        <select id="shot-set">
+          <option value="esenciales">6 vistas: frente, lados, atrás, arriba, abajo</option>
+          <option value="completo" selected>14 vistas: las 6 + cuatro ¾ + cuatro en picado</option>
+          <option value="giro">24 vistas: vuelta completa cada 15°</option>
+        </select>
+      </div>
+      <div class="field">
+        <span class="lbl">Estilo</span>
+        <div class="seg" id="shot-style">
+          <button data-v="boceto" aria-pressed="true">Boceto</button>
+          <button data-v="arcilla" aria-pressed="false">Arcilla</button>
+          <button data-v="silueta" aria-pressed="false">Silueta</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lbl">Cámara</span>
+        <div class="seg" id="shot-proj">
+          <button data-v="orto" aria-pressed="true">Plana (sin perspectiva)</button>
+          <button data-v="persp" aria-pressed="false">Perspectiva</button>
+        </div>
+      </div>
+      <button class="tbtn primary big" id="btn-shoot">Sacar fotos de todos los ángulos</button>
+      <button class="tbtn big" id="btn-shoot-one">Foto de la vista actual</button>
+      <p class="note">La cámara plana muestra las medidas reales y agrega una regla en centímetros, ideal para copiar el boceto en papel.</p>
+    </section>
+
+    <section class="sec">
+      <h2>Arcilla</h2>
+      <div class="swatches" id="swatches"></div>
+      <label class="switch">Ver la malla<input type="checkbox" id="wire"></label>
+      <label class="switch">Torno girando<input type="checkbox" id="spin"></label>
+    </section>
+
+    <section class="sec">
+      <h2>Bloque</h2>
+      <p class="note" id="block-info"></p>
+      <button class="tbtn big" id="btn-new">Empezar con un bloque nuevo…</button>
+    </section>
+
+    <section class="sec wide-only">
+      <h2>Atajos</h2>
+      <div class="keys">
+        <kbd>1–8</kbd><span>Cambiar herramienta (0 = mano)</span>
+        <kbd>[ ]</kbd><span>Achicar / agrandar pincel</span>
+        <kbd>Ctrl</kbd><span>Mantener: efecto contrario</span>
+        <kbd>Shift</kbd><span>Mantener: alisar</span>
+        <kbd>Alt</kbd><span>Mantener: girar la vista</span>
+        <kbd>X</kbd><span>Simetría</span>
+        <kbd>Ctrl Z</kbd><span>Deshacer</span>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<div class="overlay" id="gallery" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="gallery-title">
+    <header>
+      <h3 id="gallery-title">Fotos del boceto</h3>
+      <button class="tbtn primary" id="btn-zip">Descargar todas (.zip)</button>
+      <button class="tbtn" id="btn-sheet">Descargar hoja de vistas</button>
+      <button class="tbtn" id="btn-close-gallery">Cerrar</button>
+    </header>
+    <div class="body">
+      <p class="note" id="gallery-note"></p>
+      <img class="contact" id="contact-img" alt="Hoja con todas las vistas de la escultura">
+      <div class="grid" id="shots"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="newblock" hidden>
+  <div class="sheet small" role="dialog" aria-modal="true" aria-labelledby="nb-title">
+    <header><h3 id="nb-title">Bloque nuevo</h3></header>
+    <div class="body">
+      <p class="note">Poné las medidas de tu bloque de arcilla real. Las fotos y la regla usan estas medidas. Se borra la escultura actual (guardala antes si la querés conservar).</p>
+      <div class="dimgrid">
+        <div class="field"><label for="nb-w">Ancho (cm)</label><input id="nb-w" type="number" min="1" max="100" step="0.5" value="10"></div>
+        <div class="field"><label for="nb-h">Alto (cm)</label><input id="nb-h" type="number" min="1" max="100" step="0.5" value="10"></div>
+        <div class="field"><label for="nb-d">Fondo (cm)</label><input id="nb-d" type="number" min="1" max="100" step="0.5" value="10"></div>
+      </div>
+      <div class="field">
+        <span class="lbl">Detalle de la arcilla</span>
+        <div class="seg" id="nb-res">
+          <button data-v="48" aria-pressed="false">Bajo (rápido)</button>
+          <button data-v="72" aria-pressed="true">Medio</button>
+          <button data-v="104" aria-pressed="false">Alto (fino)</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="tbtn" id="nb-cancel">Cancelar</button>
+        <button class="tbtn primary" id="nb-ok">Crear bloque</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="zoom" id="zoom" hidden><img id="zoom-img" alt=""></div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ================= estado ================= */
+const TOOLS = [
+  { id: "orbit",   key: "0", name: "Mano",     hint: "<b>Mano:</b> arrastrá para girar la vista. Sirve para mirar sin tocar la arcilla.",
+    icon: '<path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12m0-1.5V4a1.5 1.5 0 0 1 3 0v7m0-5.5a1.5 1.5 0 0 1 3 0V13m0-4a1.5 1.5 0 0 1 3 0v5a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L4.5 15a1.6 1.6 0 0 1 2.6-1.9L8 14"/>' },
+  { id: "add",     key: "1", name: "Añadir",   hint: "<b>Añadir:</b> pasá el pincel para sumar capas de arcilla, como un churro aplastado.",
+    icon: '<circle cx="12" cy="12" r="8"/><path d="M12 8v8M8 12h8"/>' },
+  { id: "sub",     key: "2", name: "Quitar",   hint: "<b>Quitar:</b> escarbá la superficie para sacar arcilla, como con una estica de lazo.",
+    icon: '<circle cx="12" cy="12" r="8"/><path d="M8 12h8"/>' },
+  { id: "inflate", key: "3", name: "Inflar",   hint: "<b>Inflar:</b> hincha la zona hacia afuera. Con Ctrl la desinfla.",
+    icon: '<path d="M12 4c4.4 0 7 3.1 7 7 0 4.7-4 9-7 9s-7-4.3-7-9c0-3.9 2.6-7 7-7z"/><path d="M9 9.5a3 3 0 0 1 3-2"/>' },
+  { id: "smooth",  key: "4", name: "Alisar",   hint: "<b>Alisar:</b> empareja la superficie como el dedo mojado. También manteniendo Shift.",
+    icon: '<path d="M3 15c3-3 5 1 9-2s6-1 9-3"/><path d="M3 19c3-2 5 1 9-1s6-1 9-2"/>' },
+  { id: "flatten", key: "5", name: "Aplanar",  hint: "<b>Aplanar:</b> deja caras planas, como golpear con una tablita.",
+    icon: '<path d="M4 16h16"/><path d="M6 12h12l-2-5H8z"/>' },
+  { id: "pinch",   key: "6", name: "Pellizcar",hint: "<b>Pellizcar:</b> junta la arcilla hacia el centro del pincel y afila bordes.",
+    icon: '<path d="M5 5l5 5M19 5l-5 5M5 19l5-5M19 19l-5-5"/><circle cx="12" cy="12" r="1.5"/>' },
+  { id: "crease",  key: "7", name: "Surco",    hint: "<b>Surco:</b> marca líneas y pliegues finos. Con Ctrl hace un filo hacia afuera.",
+    icon: '<path d="M4 8c4 0 5 8 8 8s4-8 8-8"/>' },
+  { id: "grab",    key: "8", name: "Mover",    hint: "<b>Mover:</b> agarrá un pedazo de arcilla y estiralo o empujalo hacia donde arrastres.",
+    icon: '<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>' },
+];
+const CLAYS = [
+  { name: "Arcilla roja", c: "#A65A3B" },
+  { name: "Gres gris", c: "#9A948B" },
+  { name: "Arcilla blanca", c: "#D8D0C2" },
+  { name: "Plastilina verde", c: "#6E8C67" },
+  { name: "Cera azul", c: "#5D7491" },
+];
+const S = {
+  tool: "add", radius: 0.28, strength: 0.5, sym: true, invert: false, wire: false, spin: false,
+  clay: CLAYS[0].c, dims: [10, 10, 10], res: 72,
+  shotStyle: "boceto", shotProj: "orto",
+};
+const STORE_KEY = "taller-arcilla:v1";
+
+/* ================= escena ================= */
+const stage = $("#stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+const canvas = renderer.domElement;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 100);
+camera.position.set(3.4, 2.5, 4.4);
+scene.add(camera);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x7d828c, 0.55);
+scene.add(hemi);
+const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+keyLight.position.set(3, 6, 4);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+Object.assign(keyLight.shadow.camera, { left: -3, right: 3, top: 3, bottom: -3, near: 0.5, far: 20 });
+keyLight.shadow.bias = -0.0004;
+keyLight.shadow.normalBias = 0.02;
+scene.add(keyLight);
+const headLight = new THREE.DirectionalLight(0xffffff, 0.35);
+headLight.position.set(0.3, 0.4, 1);
+camera.add(headLight);
+camera.add(headLight.target);
+headLight.target.position.set(0, 0, -1);
+
+const turntable = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.9, 2.0, 0.12, 72),
+  new THREE.MeshStandardMaterial({ color: 0x8f8579, roughness: 0.9 })
+);
+turntable.receiveShadow = true;
+scene.add(turntable);
+const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.ShadowMaterial({ opacity: 0.18 }));
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.receiveShadow = true;
+shadowPlane.visible = false;
+scene.add(shadowPlane);
+
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.minDistance = 1.2;
+controls.maxDistance = 14;
+controls.autoRotateSpeed = 2.2;
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN };
+
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function syncTheme() {
+  scene.background = new THREE.Color(cssVar("--stage") || "#D9DEE5");
+  ring.material.color.set(cssVar("--accent") || "#2C5AA6");
+}
+
+/* ================= materiales ================= */
+const clayMat = new THREE.MeshStandardMaterial({ color: S.clay, roughness: 0.82, metalness: 0 });
+const toonGrad = (() => {
+  const d = new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 215, 215, 215, 255, 255, 255, 255, 255]);
+  const t = new THREE.DataTexture(d, 4, 1, THREE.RGBAFormat);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.needsUpdate = true;
+  return t;
+})();
+const toonMat = new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toonGrad });
+const silMat = new THREE.MeshBasicMaterial({ color: 0x15181f });
+const outlineUniform = { value: 0.012 };
+const outlineMat = new THREE.MeshBasicMaterial({ color: 0x15181f, side: THREE.BackSide });
+outlineMat.onBeforeCompile = sh => {
+  sh.uniforms.thick = outlineUniform;
+  sh.vertexShader = "uniform float thick;\n" + sh.vertexShader.replace("#include <begin_vertex>", "vec3 transformed = position + normal * thick;");
+};
+
+/* ================= malla de arcilla ================= */
+let geo, mesh, outline, P, NRM, vCount = 0, nbrStart, nbrList;
+let gIdx, gW, mark, tmp;
+let dirty = false;
+
+function makeBlockData(dims, res) {
+  const max = Math.max(...dims);
+  const sx = 2 * dims[0] / max, sy = 2 * dims[1] / max, sz = 2 * dims[2] / max;
+  const seg = d => Math.max(8, Math.round(res * d / max));
+  const box = new THREE.BoxGeometry(sx, sy, sz, seg(dims[0]), seg(dims[1]), seg(dims[2]));
+  const src = box.attributes.position.array, sidx = box.index.array;
+  const map = new Map(), remap = new Uint32Array(src.length / 3), out = [];
+  for (let i = 0; i < src.length / 3; i++) {
+    const x = src[3 * i], y = src[3 * i + 1], z = src[3 * i + 2];
+    const k = Math.round(x * 1e4) + "," + Math.round(y * 1e4) + "," + Math.round(z * 1e4);
+    let j = map.get(k);
+    if (j === undefined) { j = out.length / 3; map.set(k, j); out.push(x, y, z); }
+    remap[i] = j;
+  }
+  const index = new Uint32Array(sidx.length);
+  for (let i = 0; i < sidx.length; i++) index[i] = remap[sidx[i]];
+  box.dispose();
+  return { positions: new Float32Array(out), index };
+}
+
+function buildNeighbors(n, index) {
+  const lists = Array.from({ length: n }, () => []);
+  const add = (a, b) => { if (!lists[a].includes(b)) lists[a].push(b); };
+  for (let t = 0; t < index.length; t += 3) {
+    const a = index[t], b = index[t + 1], c = index[t + 2];
+    add(a, b); add(b, a); add(b, c); add(c, b); add(a, c); add(c, a);
+  }
+  nbrStart = new Uint32Array(n + 1);
+  let total = 0;
+  for (let i = 0; i < n; i++) { nbrStart[i] = total; total += lists[i].length; }
+  nbrStart[n] = total;
+  nbrList = new Uint32Array(total);
+  for (let i = 0; i < n; i++) nbrList.set(lists[i], nbrStart[i]);
+}
+
+function setBlock(dims, res, positions) {
+  const data = makeBlockData(dims, res);
+  S.dims = dims.slice(); S.res = res;
+  if (mesh) { scene.remove(mesh); geo.dispose(); }
+  vCount = data.positions.length / 3;
+  geo = new THREE.BufferGeometry();
+  const attr = new THREE.BufferAttribute(data.positions, 3);
+  attr.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute("position", attr);
+  geo.setIndex(new THREE.BufferAttribute(data.index, 1));
+  P = data.positions;
+  buildNeighbors(vCount, data.index);
+  gIdx = new Int32Array(vCount); gW = new Float32Array(vCount); mark = new Uint8Array(vCount); tmp = new Float32Array(vCount * 3);
+  if (positions && positions.length === P.length) P.set(positions);
+  else { for (let k = 0; k < 3; k++) smoothAll(0.5); } // bordes apenas redondeados, como un bloque real
+  geo.computeVertexNormals();
+  NRM = geo.attributes.normal.array;
+  geo.computeBoundingBox(); geo.computeBoundingSphere();
+  mesh = new THREE.Mesh(geo, clayMat);
+  mesh.castShadow = true;
+  outline = new THREE.Mesh(geo, outlineMat);
+  outline.visible = false;
+  mesh.add(outline);
+  scene.add(mesh);
+  const minY = data.positions.reduce((m, v, i) => (i % 3 === 1 && v < m ? v : m), Infinity);
+  turntable.position.y = minY - 0.06;
+  shadowPlane.position.y = minY - 0.001;
+  undoStack.length = 0; redoStack.length = 0; refreshUndo();
+  updateInfo();
+}
+
+function smoothAll(f) {
+  tmp.set(P);
+  for (let i = 0; i < vCount; i++) {
+    const a = nbrStart[i], b = nbrStart[i + 1], n = b - a;
+    let x = 0, y = 0, z = 0;
+    for (let k = a; k < b; k++) { const j = nbrList[k] * 3; x += tmp[j]; y += tmp[j + 1]; z += tmp[j + 2]; }
+    P[3 * i] += (x / n - tmp[3 * i]) * f; P[3 * i + 1] += (y / n - tmp[3 * i + 1]) * f; P[3 * i + 2] += (z / n - tmp[3 * i + 2]) * f;
+  }
+}
+
+/* ================= pinceles ================= */
+function gather(px, py, pz, r, sharp, exclude) {
+  const r2 = r * r; let c = 0;
+  for (let i = 0; i < vCount; i++) {
+    const dx = P[3 * i] - px, dy = P[3 * i + 1] - py, dz = P[3 * i + 2] - pz;
+    const d2 = dx * dx + dy * dy + dz * dz;
+    if (d2 < r2 && !(exclude && mark[i])) {
+      const t = Math.sqrt(d2) / r;
+      gIdx[c] = i;
+      gW[c] = sharp ? (1 - t) * (1 - t) * (1 - t) : (1 - t * t) * (1 - t * t);
+      c++;
+    }
+  }
+  return c;
+}
+
+function dab(px, py, pz, tool, sign) {
+  const r = S.radius, s = S.strength;
+  const sharp = tool === "crease" || tool === "pinch";
+  const c = gather(px, py, pz, r, sharp, false);
+  if (!c) return;
+  let nx = 0, ny = 0, nz = 0, cx = 0, cy = 0, cz = 0, ws = 0;
+  for (let k = 0; k < c; k++) {
+    const i = 3 * gIdx[k], w = gW[k];
+    nx += NRM[i] * w; ny += NRM[i + 1] * w; nz += NRM[i + 2] * w;
+    cx += P[i] * w; cy += P[i + 1] * w; cz += P[i + 2] * w; ws += w;
+  }
+  const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+  cx /= ws; cy /= ws; cz /= ws;
+
+  switch (tool) {
+    case "add": case "sub": {
+      const amt = (tool === "sub" ? -1 : 1) * sign * s * r * 0.09;
+      for (let k = 0; k < c; k++) { const i = 3 * gIdx[k], a = amt * gW[k]; P[i] += nx * a; P[i + 1] += ny * a; P[i + 2] += nz * a; }
+      break;
+    }
+    case "inflate": {
+      const amt = sign * s * r * 0.08;
+      for (let k = 0; k < c; k++) { const i = 3 * gIdx[k], a = amt * gW[k]; P[i] += NRM[i] * a; P[i + 1] += NRM[i + 1] * a; P[i + 2] += NRM[i + 2] * a; }
+      break;
+    }
+    case "smooth": {
+      for (let k = 0; k < c; k++) {
+        const v = gIdx[k], a = nbrStart[v], b = nbrStart[v + 1], n = b - a;
+        let x = 0, y = 0, z = 0;
+        for (let q = a; q < b; q++) { const j = nbrList[q] * 3; x += P[j]; y += P[j + 1]; z += P[j + 2]; }
+        tmp[3 * k] = x / n; tmp[3 * k + 1] = y / n; tmp[3 * k + 2] = z / n;
+      }
+      for (let k = 0; k < c; k++) {
+        const i = 3 * gIdx[k], f = Math.min(1, gW[k] * (0.25 + s * 0.75));
+        P[i] += (tmp[3 * k] - P[i]) * f; P[i + 1] += (tmp[3 * k + 1] - P[i + 1]) * f; P[i + 2] += (tmp[3 * k + 2] - P[i + 2]) * f;
+      }
+      break;
+    }
+    case "flatten": {
+      // plano que pasa por el centro de la zona; con "invertir" sólo baja lo que sobresale
+      for (let k = 0; k < c; k++) {
+        const i = 3 * gIdx[k];
+        const d = (P[i] - cx) * nx + (P[i + 1] - cy) * ny + (P[i + 2] - cz) * nz;
+        if (sign < 0 && d < 0) continue;
+        const f = d * gW[k] * s * 0.35;
+        P[i] -= nx * f; P[i + 1] -= ny * f; P[i + 2] -= nz * f;
+      }
+      break;
+    }
+    case "pinch": {
+      for (let k = 0; k < c; k++) {
+        const i = 3 * gIdx[k];
+        let dx = px - P[i], dy = py - P[i + 1], dz = pz - P[i + 2];
+        const dn = dx * nx + dy * ny + dz * nz;
+        dx -= nx * dn; dy -= ny * dn; dz -= nz * dn;
+        const f = gW[k] * s * 0.12 * sign;
+        P[i] += dx * f; P[i + 1] += dy * f; P[i + 2] += dz * f;
+      }
+      break;
+    }
+    case "crease": {
+      const amt = -sign * s * r * 0.07;
+      for (let k = 0; k < c; k++) {
+        const i = 3 * gIdx[k], w = gW[k];
+        let dx = px - P[i], dy = py - P[i + 1], dz = pz - P[i + 2];
+        const dn = dx * nx + dy * ny + dz * nz;
+        dx -= nx * dn; dy -= ny * dn; dz -= nz * dn;
+        const f = w * s * 0.08;
+        P[i] += nx * amt * w + dx * f; P[i + 1] += ny * amt * w + dy * f; P[i + 2] += nz * amt * w + dz * f;
+      }
+      break;
+    }
+  }
+  dirty = true;
+}
+
+/* ================= interacción ================= */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let stroke = null, hoverEvt = null;
+
+const ring = new THREE.Mesh(
+  new THREE.RingGeometry(0.94, 1, 56),
+  new THREE.MeshBasicMaterial({ color: 0x2c5aa6, transparent: true, opacity: 0.9, depthTest: false, side: THREE.DoubleSide })
+);
+ring.renderOrder = 10; ring.visible = false;
+scene.add(ring);
+const Z = new THREE.Vector3(0, 0, 1);
+
+function setNdc(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+}
+function pick(e) {
+  setNdc(e);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObject(mesh, false)[0] || null;
+}
+function applyAt(p, tool, sign) {
+  dab(p.x, p.y, p.z, tool, sign);
+  if (S.sym) dab(-p.x, p.y, p.z, tool, sign);
+}
+
+function startGrab(hit) {
+  const p = hit.point;
+  const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(dir, p);
+  const sets = [];
+  mark.fill(0);
+  const take = (x, y, z, mx) => {
+    const c = gather(x, y, z, S.radius, false, true);
+    const idx = gIdx.slice(0, c), w = gW.slice(0, c), orig = new Float32Array(c * 3);
+    for (let k = 0; k < c; k++) { const i = idx[k]; mark[i] = 1; orig.set(P.subarray(3 * i, 3 * i + 3), 3 * k); }
+    sets.push({ idx, w, orig, mx });
+  };
+  take(p.x, p.y, p.z, 1);
+  if (S.sym && Math.abs(p.x) > 1e-4) take(-p.x, p.y, p.z, -1);
+  return { plane, p0: p.clone(), sets };
+}
+function moveGrab(e) {
+  setNdc(e);
+  raycaster.setFromCamera(ndc, camera);
+  const q = new THREE.Vector3();
+  if (!raycaster.ray.intersectPlane(stroke.grab.plane, q)) return;
+  const d = q.sub(stroke.grab.p0).multiplyScalar(0.4 + S.strength * 0.6);
+  for (const st of stroke.grab.sets) {
+    for (let k = 0; k < st.idx.length; k++) {
+      const i = 3 * st.idx[k], w = st.w[k];
+      P[i] = st.orig[3 * k] + d.x * st.mx * w; P[i + 1] = st.orig[3 * k + 1] + d.y * w; P[i + 2] = st.orig[3 * k + 2] + d.z * w;
+    }
+  }
+  dirty = true;
+  placeRing(stroke.grab.p0.clone().add(d), null);
+}
+
+function placeRing(p, n) {
+  ring.visible = true;
+  ring.position.copy(p);
+  if (n) { ring.quaternion.setFromUnitVectors(Z, n); ring.position.addScaledVector(n, 0.004); }
+  ring.scale.setScalar(S.radius);
+}
+
+canvas.addEventListener("pointerdown", e => {
+  if (stroke) { endStroke(); return; } // segundo dedo: deja que la vista gire / haga zoom
+  if (e.button !== 0 || e.altKey || S.tool === "orbit") return;
+  const hit = pick(e);
+  if (!hit) return;
+  controls.enabled = false;
+  controls.autoRotate = false;
+  pushUndo();
+  const invert = S.invert !== (e.ctrlKey || e.metaKey);
+  const tool = e.shiftKey ? "smooth" : S.tool;
+  stroke = { id: e.pointerId, tool, sign: invert ? -1 : 1, last: hit.point.clone() };
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  if (tool === "grab") stroke.grab = startGrab(hit);
+  else applyAt(hit.point, tool, stroke.sign);
+  e.preventDefault();
+}, { capture: true });
+
+canvas.addEventListener("pointermove", e => {
+  if (stroke && e.pointerId === stroke.id) {
+    if (stroke.grab) { moveGrab(e); return; }
+    const hit = pick(e);
+    if (!hit) return;
+    const p = hit.point, dist = p.distanceTo(stroke.last), step = Math.max(0.006, S.radius * 0.18);
+    const n = Math.min(40, Math.floor(dist / step));
+    for (let j = 1; j <= n; j++) applyAt(stroke.last.clone().lerp(p, j / n), stroke.tool, stroke.sign);
+    if (n > 0) stroke.last.copy(p);
+    placeRing(p, hit.face.normal);
+  } else if (!stroke) {
+    hoverEvt = e;
+  }
+});
+function endStroke() {
+  if (!stroke) return;
+  stroke = null;
+  controls.enabled = true;
+  controls.autoRotate = S.spin;
+  scheduleSave();
+}
+canvas.addEventListener("pointerup", e => { if (stroke && e.pointerId === stroke.id) endStroke(); });
+canvas.addEventListener("pointercancel", endStroke);
+canvas.addEventListener("pointerleave", () => { if (!stroke) { ring.visible = false; hoverEvt = null; } });
+canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+/* ================= deshacer ================= */
+const undoStack = [], redoStack = [];
+function pushUndo() { undoStack.push(P.slice()); if (undoStack.length > 30) undoStack.shift(); redoStack.length = 0; refreshUndo(); }
+function undo() { if (!undoStack.length) return; redoStack.push(P.slice()); P.set(undoStack.pop()); dirty = true; refreshUndo(); scheduleSave(); }
+function redo() { if (!redoStack.length) return; undoStack.push(P.slice()); P.set(redoStack.pop()); dirty = true; refreshUndo(); scheduleSave(); }
+function refreshUndo() { $("#btn-undo").disabled = !undoStack.length; $("#btn-redo").disabled = !redoStack.length; }
+
+/* ================= bucle ================= */
+let dimsTick = 0;
+function frame() {
+  requestAnimationFrame(frame);
+  if (dirty) {
+    geo.attributes.position.needsUpdate = true;
+    geo.computeVertexNormals();
+    NRM = geo.attributes.normal.array;
+    geo.computeBoundingSphere();
+    geo.computeBoundingBox();
+    dirty = false; dimsTick = 1;
+  }
+  if (hoverEvt && !stroke) {
+    const e = hoverEvt; hoverEvt = null;
+    const hit = S.tool === "orbit" ? null : pick(e);
+    if (hit) placeRing(hit.point, hit.face.normal); else ring.visible = false;
+  }
+  if (dimsTick) { dimsTick = 0; updateDims(); }
+  controls.update();
+  renderer.render(scene, camera);
+}
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+/* ================= medidas ================= */
+const cmPerUnit = () => Math.max(...S.dims) / 2;
+const fmt = v => (Math.round(v * 10) / 10).toLocaleString("es", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+function updateDims() {
+  const b = geo.boundingBox, k = cmPerUnit();
+  $("#dims").innerHTML = `${fmt((b.max.x - b.min.x) * k)} <span>×</span> ${fmt((b.max.y - b.min.y) * k)} <span>×</span> ${fmt((b.max.z - b.min.z) * k)} <span>cm (ancho × alto × fondo)</span>`;
+}
+function updateInfo() {
+  const names = { 48: "bajo", 72: "medio", 104: "alto" };
+  $("#block-info").textContent = `Bloque de ${S.dims.map(fmt).join(" × ")} cm · detalle ${names[S.res] || S.res} (${vCount.toLocaleString("es")} puntos).`;
+  updateDims(); updateRadiusLabel();
+}
+function updateRadiusLabel() { $("#radius-val").textContent = `${fmt(S.radius * cmPerUnit() * 2)} cm`; }
+
+/* ================= interfaz ================= */
+const toolsEl = $("#tools");
+TOOLS.forEach((t, i) => {
+  if (i === 1) toolsEl.insertAdjacentHTML("beforeend", "<hr>");
+  toolsEl.insertAdjacentHTML("beforeend",
+    `<button class="tool" data-tool="${t.id}" aria-pressed="false" title="${t.name} (${t.key})"><kbd>${t.key}</kbd><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>${t.name}</button>`);
+});
+function setTool(id) {
+  S.tool = id;
+  $$(".tool").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tool === id)));
+  const t = TOOLS.find(t => t.id === id);
+  $("#hint").innerHTML = t.hint + " &nbsp;·&nbsp; Arrastrá fuera de la pieza para girar, rueda para zoom, clic derecho para desplazar.";
+  if (id === "orbit") ring.visible = false;
+}
+toolsEl.addEventListener("click", e => { const b = e.target.closest(".tool"); if (b) setTool(b.dataset.tool); });
+
+const swEl = $("#swatches");
+CLAYS.forEach(c => swEl.insertAdjacentHTML("beforeend", `<button class="swatch" style="background:${c.c}" data-c="${c.c}" title="${c.name}" aria-label="${c.name}" aria-pressed="false"></button>`));
+function setClay(c) { S.clay = c; clayMat.color.set(c); $$(".swatch").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.c === c))); }
+swEl.addEventListener("click", e => { const b = e.target.closest(".swatch"); if (b) { setClay(b.dataset.c); scheduleSave(); } });
+
+function bindRange(id, key, label) {
+  const el = $("#" + id);
+  const show = () => label();
+  el.value = S[key];
+  el.addEventListener("input", () => { S[key] = parseFloat(el.value); show(); if (ring.visible) ring.scale.setScalar(S.radius); });
+  show();
+}
+bindRange("radius", "radius", updateRadiusLabel);
+bindRange("strength", "strength", () => { $("#strength-val").textContent = Math.round(S.strength * 100) + " %"; });
+function setRadius(v) { S.radius = Math.min(0.9, Math.max(0.04, v)); $("#radius").value = S.radius; updateRadiusLabel(); ring.scale.setScalar(S.radius); }
+
+$("#sym").addEventListener("change", e => { S.sym = e.target.checked; });
+$("#invert").addEventListener("change", e => { S.invert = e.target.checked; });
+$("#wire").addEventListener("change", e => { S.wire = e.target.checked; clayMat.wireframe = S.wire; });
+$("#spin").addEventListener("change", e => { S.spin = e.target.checked; controls.autoRotate = S.spin; });
+
+function bindSeg(id, onPick) {
+  const el = $("#" + id);
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    el.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    onPick(b.dataset.v);
+  });
+}
+bindSeg("shot-style", v => { S.shotStyle = v; });
+bindSeg("shot-proj", v => { S.shotProj = v; });
+let nbRes = 72;
+bindSeg("nb-res", v => { nbRes = parseInt(v, 10); });
+
+// vistas rápidas
+let camAnim = null;
+function viewDir(az, el) {
+  const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
+  return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e));
+}
+$$(".viewcube button").forEach(b => b.addEventListener("click", () => {
+  const [az, el] = b.dataset.view.split(",").map(Number);
+  const dist = camera.position.distanceTo(controls.target);
+  const from = camera.position.clone(), to = controls.target.clone().add(viewDir(az, el).multiplyScalar(dist));
+  const t0 = performance.now();
+  cancelAnimationFrame(camAnim);
+  const step = now => {
+    const t = Math.min(1, (now - t0) / 380), k = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    camera.position.copy(from).lerp(to, k).sub(controls.target).setLength(dist).add(controls.target);
+    if (t < 1) camAnim = requestAnimationFrame(step);
+  };
+  camAnim = requestAnimationFrame(step);
+}));
+
+// panel en teléfono
+$("#btn-panel").addEventListener("click", () => {
+  const open = $("#panel").classList.toggle("open");
+  $("#btn-panel").setAttribute("aria-expanded", String(open));
+});
+stage.addEventListener("pointerdown", () => { $("#panel").classList.remove("open"); $("#btn-panel").setAttribute("aria-expanded", "false"); });
+
+$("#btn-undo").addEventListener("click", undo);
+$("#btn-redo").addEventListener("click", redo);
+
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input[type=text], input[type=number], input:not([type]), select, textarea")) return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === "y") { e.preventDefault(); redo(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  const t = TOOLS.find(t => t.key === e.key);
+  if (t) { setTool(t.id); return; }
+  if (k === "[") setRadius(S.radius - 0.03);
+  else if (k === "]") setRadius(S.radius + 0.03);
+  else if (k === "x") { S.sym = !S.sym; $("#sym").checked = S.sym; toast(S.sym ? "Simetría activada" : "Simetría desactivada"); }
+  else if (k === "w") { $("#wire").click(); }
+  else if (k === "escape") { closeAll(); }
+});
+
+/* ================= avisos ================= */
+let toastT;
+function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
+
+/* ================= guardar / abrir ================= */
+function toB64(f32) {
+  const u8 = new Uint8Array(f32.buffer, f32.byteOffset, f32.byteLength); let s = "";
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function fromB64(b) { const s = atob(b), u8 = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i); return new Float32Array(u8.buffer); }
+function projectData() {
+  return { app: "taller-arcilla", v: 1, name: $("#sculpt-name").value, dims: S.dims, res: S.res, clay: S.clay, positions: toB64(P) };
+}
+function loadProject(d) {
+  if (!d || d.app !== "taller-arcilla" || !Array.isArray(d.dims) || !d.positions) throw new Error("formato");
+  setBlock(d.dims.map(Number), Number(d.res), fromB64(d.positions));
+  if (d.clay) setClay(d.clay);
+  if (d.name) $("#sculpt-name").value = d.name;
+  dirty = true;
+}
+let saveT;
+function scheduleSave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { try { localStorage.setItem(STORE_KEY, JSON.stringify(projectData())); } catch (_) {} }, 700);
+}
+$("#sculpt-name").addEventListener("change", scheduleSave);
+
+const slug = () => ($("#sculpt-name").value || "escultura").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "escultura";
+
+const downloadsP = (window.claude && typeof window.claude.use === "function") ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+async function offerFile(filename, blob) {
+  const dl = await Promise.race([downloadsP, new Promise(r => setTimeout(() => r(null), 1500))]);
+  if (dl) {
+    try { await dl.save({ filename, data: blob }); toast("Archivo guardado: " + filename); }
+    catch (e) {
+      if (e && e.code === "declined") toast("Descarga cancelada");
+      else if (e && e.code === "rate_limited") toast("Ya hay una descarga esperando confirmación");
+      else toast("No se pudo descargar acá. Mantené apretada o hacé clic derecho en una foto para guardarla.");
+    }
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Descargando " + filename);
+}
+$("#btn-save").addEventListener("click", () => offerFile(slug() + ".json", new Blob([JSON.stringify(projectData())], { type: "application/json" })));
+$("#btn-open").addEventListener("click", () => $("#file-open").click());
+$("#file-open").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try { loadProject(JSON.parse(await f.text())); scheduleSave(); toast("Escultura abierta: " + f.name); }
+  catch (_) { toast("Ese archivo no es una escultura del Taller de Arcilla. Elegí un .json guardado desde acá."); }
+});
+
+/* ================= bloque nuevo ================= */
+$("#btn-new").addEventListener("click", () => {
+  [$("#nb-w").value, $("#nb-h").value, $("#nb-d").value] = S.dims;
+  nbRes = S.res;
+  $$("#nb-res button").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === S.res)));
+  $("#newblock").hidden = false;
+  $("#nb-w").focus();
+});
+$("#nb-cancel").addEventListener("click", () => ($("#newblock").hidden = true));
+$("#nb-ok").addEventListener("click", () => {
+  const dims = ["#nb-w", "#nb-h", "#nb-d"].map(s => Math.min(100, Math.max(1, parseFloat($(s).value) || 10)));
+  setBlock(dims, nbRes);
+  $("#newblock").hidden = true;
+  scheduleSave();
+  toast("Bloque nuevo de " + dims.map(fmt).join(" × ") + " cm");
+});
+
+/* ================= fotos ================= */
+const VIEW_SETS = {
+  esenciales: [["Frente", 0, 0], ["Derecha", 90, 0], ["Atrás", 180, 0], ["Izquierda", 270, 0], ["Arriba", 0, 90], ["Abajo", 0, -90]],
+  completo: [
+    ["Frente", 0, 0], ["¾ frente-derecha", 45, 0], ["Derecha", 90, 0], ["¾ atrás-derecha", 135, 0],
+    ["Atrás", 180, 0], ["¾ atrás-izquierda", 225, 0], ["Izquierda", 270, 0], ["¾ frente-izquierda", 315, 0],
+    ["Picado frente-derecha", 45, 35], ["Picado atrás-derecha", 135, 35], ["Picado atrás-izquierda", 225, 35], ["Picado frente-izquierda", 315, 35],
+    ["Arriba", 0, 90], ["Abajo", 0, -90],
+  ],
+  giro: Array.from({ length: 24 }, (_, i) => [`Giro ${i * 15}°`, i * 15, 0]),
+};
+const PHOTO = 1024;
+let photoRenderer = null;
+function getPhotoRenderer() {
+  if (!photoRenderer) {
+    photoRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    photoRenderer.setPixelRatio(1);
+    photoRenderer.setSize(PHOTO, PHOTO, false);
+    photoRenderer.outputEncoding = THREE.sRGBEncoding;
+    photoRenderer.shadowMap.enabled = true;
+    photoRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  }
+  return photoRenderer;
+}
+
+function applyStyle(style) {
+  const saved = { mat: mesh.material, bg: scene.background, tt: turntable.visible, ring: ring.visible, wire: clayMat.wireframe };
+  ring.visible = false; turntable.visible = false; clayMat.wireframe = false;
+  scene.background = new THREE.Color(style === "arcilla" ? 0xf1f0ec : 0xffffff);
+  if (style === "boceto") { mesh.material = toonMat; outline.visible = true; outlineUniform.value = geo.boundingSphere.radius * 0.011; }
+  else if (style === "silueta") mesh.material = silMat;
+  else shadowPlane.visible = true;
+  return () => {
+    mesh.material = saved.mat; scene.background = saved.bg; turntable.visible = saved.tt; ring.visible = saved.ring;
+    clayMat.wireframe = saved.wire; outline.visible = false; shadowPlane.visible = false;
+  };
+}
+
+function niceBar(pxPerCm, maxPx) {
+  const opts = [0.5, 1, 2, 5, 10, 20, 50];
+  let best = opts[0];
+  for (const o of opts) if (o * pxPerCm <= maxPx) best = o;
+  return best;
+}
+
+function shoot(label, cam, isOrtho, half, angleText) {
+  const r = getPhotoRenderer();
+  cam.add(headLight);
+  r.render(scene, cam);
+  camera.add(headLight);
+  const c = document.createElement("canvas");
+  c.width = c.height = PHOTO;
+  const g = c.getContext("2d");
+  g.drawImage(r.domElement, 0, 0);
+  // rótulo
+  const ink = S.shotStyle === "silueta" || S.shotStyle === "boceto" ? "#15181f" : "#2a2622";
+  g.fillStyle = ink;
+  g.font = "700 34px Gabarito, 'Avenir Next', sans-serif";
+  g.textBaseline = "top";
+  g.fillText(label.toUpperCase(), 36, 32);
+  g.font = "400 22px 'JetBrains Mono', monospace";
+  g.fillStyle = "#5b6475";
+  g.fillText(angleText, 36, 76);
+  g.textAlign = "right";
+  g.fillText($("#sculpt-name").value.slice(0, 40), PHOTO - 36, 36);
+  g.textAlign = "left";
+  if (isOrtho) {
+    const pxPerCm = (PHOTO / (2 * half)) / cmPerUnit();
+    const cm = niceBar(pxPerCm, PHOTO * 0.28), w = cm * pxPerCm, x = 36, y = PHOTO - 56;
+    g.fillStyle = ink;
+    g.fillRect(x, y, w, 6);
+    const ticks = cm >= 1 && cm <= 10 ? cm : 2;
+    for (let i = 0; i <= ticks; i++) g.fillRect(x + (w * i) / ticks - 1.5, y - (i === 0 || i === ticks ? 14 : 8), 3, i === 0 || i === ticks ? 20 : 14);
+    g.font = "500 22px 'JetBrains Mono', monospace";
+    g.fillText(`${fmt(cm)} cm`, x + w + 14, y - 10);
+  }
+  return c;
+}
+
+function photoCamera(az, el) {
+  const b = geo.boundingBox, center = b.getCenter(new THREE.Vector3());
+  const R = b.getSize(new THREE.Vector3()).length() / 2;
+  const dir = viewDir(az, el);
+  let cam, half = R * 1.12;
+  if (S.shotProj === "orto") {
+    cam = new THREE.OrthographicCamera(-half, half, half, -half, 0.01, R * 12);
+    cam.position.copy(center).addScaledVector(dir, R * 4);
+  } else {
+    cam = new THREE.PerspectiveCamera(30, 1, 0.01, 100);
+    cam.position.copy(center).addScaledVector(dir, (R * 1.1) / Math.sin(THREE.MathUtils.degToRad(15)));
+  }
+  if (Math.abs(el) >= 89.9) cam.up.set(0, 0, el > 0 ? -1 : 1);
+  cam.lookAt(center);
+  cam.updateProjectionMatrix();
+  cam.updateMatrixWorld();
+  return { cam, half };
+}
+
+let lastShots = [], lastSheet = null;
+const nextFrame = () => new Promise(r => requestAnimationFrame(() => r()));
+async function takePhotos(list) {
+  if (stroke) endStroke();
+  $("#busy").hidden = false;
+  await nextFrame(); await nextFrame();
+  if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (_) {} }
+  const restore = applyStyle(S.shotStyle);
+  const results = [];
+  try {
+    for (let i = 0; i < list.length; i++) {
+      const [label, az, el] = list[i];
+      $("#busy").textContent = `Sacando fotos… ${i + 1} de ${list.length}`;
+      const { cam, half } = photoCamera(az, el);
+      const angle = el === 90 ? "desde arriba" : el === -90 ? "desde abajo" : `giro ${az}° · altura ${el}°`;
+      results.push({ label, angle, canvas: shoot(label, cam, S.shotProj === "orto", half, angle) });
+      if (i % 3 === 2) await nextFrame();
+    }
+  } finally {
+    restore();
+    $("#busy").hidden = true;
+    $("#busy").textContent = "Sacando fotos…";
+  }
+  return results;
+}
+
+function contactSheet(shots) {
+  const cols = shots.length <= 6 ? 3 : shots.length <= 16 ? 4 : 6;
+  const cell = shots.length > 16 ? 400 : 520, gap = 16, pad = 48, head = 150;
+  const rows = Math.ceil(shots.length / cols);
+  const W = pad * 2 + cols * cell + (cols - 1) * gap, H = head + pad + rows * cell + (rows - 1) * gap + 40;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ffffff"; g.fillRect(0, 0, W, H);
+  g.fillStyle = "#15181f"; g.textBaseline = "top";
+  g.font = "800 54px Gabarito, 'Avenir Next', sans-serif";
+  g.fillText($("#sculpt-name").value || "Escultura", pad, 40);
+  g.font = "400 24px 'JetBrains Mono', monospace"; g.fillStyle = "#5b6475";
+  const b = geo.boundingBox, k = cmPerUnit();
+  const size = `${fmt((b.max.x - b.min.x) * k)} × ${fmt((b.max.y - b.min.y) * k)} × ${fmt((b.max.z - b.min.z) * k)} cm`;
+  const date = new Date().toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" });
+  g.fillText(`Boceto · ${shots.length} vistas · ${size} · bloque ${S.dims.map(fmt).join("×")} cm · ${date}`, pad, 106);
+  shots.forEach((s, i) => {
+    const x = pad + (i % cols) * (cell + gap), y = head + Math.floor(i / cols) * (cell + gap);
+    g.drawImage(s.canvas, x, y, cell, cell);
+    g.strokeStyle = "#d3d8e0"; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, cell - 2, cell - 2);
+  });
+  return c;
+}
+
+const toBlob = c => new Promise(r => c.toBlob(r, "image/png"));
+async function showGallery(shots) {
+  lastShots.forEach(s => s.url && URL.revokeObjectURL(s.url));
+  if (lastSheet && lastSheet.url) URL.revokeObjectURL(lastSheet.url);
+  for (const s of shots) { s.blob = await toBlob(s.canvas); s.url = URL.createObjectURL(s.blob); }
+  const sheetC = contactSheet(shots);
+  lastSheet = { blob: await toBlob(sheetC) };
+  lastSheet.url = URL.createObjectURL(lastSheet.blob);
+  lastShots = shots;
+  $("#contact-img").src = lastSheet.url;
+  $("#gallery-title").textContent = `${shots.length} ${shots.length === 1 ? "foto" : "fotos"} de “${$("#sculpt-name").value || "Escultura"}”`;
+  $("#gallery-note").textContent = "Arriba está la hoja con todas las vistas juntas; abajo cada foto por separado. Tocá una foto para verla grande. También podés hacer clic derecho (o mantener apretado en el celu) para guardarla.";
+  $("#shots").innerHTML = "";
+  shots.forEach((s, i) => {
+    const f = document.createElement("figure"); f.className = "shot";
+    const img = document.createElement("img"); img.src = s.url; img.alt = s.label; img.loading = "lazy";
+    img.addEventListener("click", () => openZoom(s.url, s.label));
+    const cap = document.createElement("figcaption");
+    const b = document.createElement("b"); b.textContent = `${String(i + 1).padStart(2, "0")} · ${s.label}`;
+    const a = document.createElement("span"); a.textContent = s.angle;
+    cap.append(b, a); f.append(img, cap);
+    $("#shots").append(f);
+  });
+  $("#contact-img").onclick = () => openZoom(lastSheet.url, "Hoja de vistas");
+  $("#gallery").hidden = false;
+}
+function openZoom(url, alt) { $("#zoom-img").src = url; $("#zoom-img").alt = alt; $("#zoom").hidden = false; }
+$("#zoom").addEventListener("click", () => ($("#zoom").hidden = true));
+function closeAll() { $("#zoom").hidden = true; $("#gallery").hidden = true; $("#newblock").hidden = true; }
+$("#btn-close-gallery").addEventListener("click", () => ($("#gallery").hidden = true));
+$("#gallery").addEventListener("click", e => { if (e.target.id === "gallery") $("#gallery").hidden = true; });
+
+async function shootSet() {
+  try { await showGallery(await takePhotos(VIEW_SETS[$("#shot-set").value])); }
+  catch (err) { console.error(err); toast("No se pudieron sacar las fotos. Probá de nuevo con menos ángulos."); }
+}
+$("#btn-shoot").addEventListener("click", shootSet);
+$("#btn-shoot-top").addEventListener("click", shootSet);
+$("#btn-shoot-one").addEventListener("click", async () => {
+  const d = camera.position.clone().sub(geo.boundingBox.getCenter(new THREE.Vector3())).normalize();
+  const el = Math.round(THREE.MathUtils.radToDeg(Math.asin(Math.max(-1, Math.min(1, d.y)))));
+  let az = Math.round(THREE.MathUtils.radToDeg(Math.atan2(d.x, d.z)));
+  if (az < 0) az += 360;
+  try { await showGallery(await takePhotos([["Vista actual", az, Math.max(-89, Math.min(89, el))]])); }
+  catch (err) { console.error(err); toast("No se pudo sacar la foto."); }
+});
+$("#btn-zip").addEventListener("click", async () => {
+  if (!lastShots.length) return;
+  if (typeof JSZip === "undefined") { toast("No se pudo preparar el .zip. Descargá la hoja de vistas."); return; }
+  const zip = new JSZip(), base = slug();
+  lastShots.forEach((s, i) => zip.file(`${String(i + 1).padStart(2, "0")}-${s.label.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/¾/g, "3-4").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.png`, s.blob));
+  zip.file(`${base}-hoja-de-vistas.png`, lastSheet.blob);
+  zip.file(`${base}.json`, JSON.stringify(projectData()));
+  offerFile(`${base}-fotos.zip`, await zip.generateAsync({ type: "blob" }));
+});
+$("#btn-sheet").addEventListener("click", () => { if (lastSheet) offerFile(`${slug()}-hoja-de-vistas.png`, lastSheet.blob); });
+
+/* ================= arranque ================= */
+const dark = window.matchMedia("(prefers-color-scheme: dark)");
+(dark.addEventListener ? dark.addEventListener("change", syncTheme) : dark.addListener(syncTheme));
+new MutationObserver(syncTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+let restored = false;
+try {
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) { loadProject(JSON.parse(raw)); restored = true; }
+} catch (_) { restored = false; }
+if (!restored) setBlock(S.dims, S.res);
+if (!restored) setClay(S.clay);
+setTool("add");
+syncTheme();
+resize();
+controls.target.set(0, 0, 0);
+controls.update();
+frame();
+if (restored) toast("Se recuperó tu última escultura");
+
+// para pruebas automáticas
+window.__taller = { S, dab: (x, y, z, t, s) => dab(x, y, z, t, s || 1), get P() { return P; }, get vCount() { return vCount; }, takePhotos, VIEW_SETS, undo, redo, pushUndo, setBlock, setTool };
+})();
+</script>
+<!--APP-END-->
+</body>
+</html>
