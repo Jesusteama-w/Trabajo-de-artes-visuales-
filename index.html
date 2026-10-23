@@ -44,6 +44,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f
 * { box-sizing: border-box; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
+[hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .app {
@@ -263,6 +264,10 @@ select { width: 100%; padding: 7px 8px; border-radius: 8px; border: 1px solid va
       <h2>Bloque</h2>
       <p class="note" id="block-info"></p>
       <button class="tbtn big" id="btn-new">Empezar con un bloque nuevo…</button>
+      <div class="row">
+        <button class="tbtn big" id="btn-save2">Guardar archivo</button>
+        <button class="tbtn big" id="btn-open2">Abrir archivo</button>
+      </div>
     </section>
 
     <section class="sec wide-only">
@@ -362,6 +367,7 @@ const CLAYS = [
   { name: "Plastilina verde", c: "#6E8C67" },
   { name: "Cera azul", c: "#5D7491" },
 ];
+THREE.ColorManagement.legacyMode = false;
 const S = {
   tool: "add", radius: 0.28, strength: 0.5, sym: true, invert: false, wire: false, spin: false,
   clay: CLAYS[0].c, dims: [10, 10, 10], res: 72,
@@ -429,8 +435,8 @@ function syncTheme() {
 /* ================= materiales ================= */
 const clayMat = new THREE.MeshStandardMaterial({ color: S.clay, roughness: 0.82, metalness: 0 });
 const toonGrad = (() => {
-  const d = new Uint8Array([70, 70, 70, 255, 150, 150, 150, 255, 215, 215, 215, 255, 255, 255, 255, 255]);
-  const t = new THREE.DataTexture(d, 4, 1, THREE.RGBAFormat);
+  const d = new Uint8Array([14, 14, 14, 255, 32, 32, 32, 255, 62, 62, 62, 255, 105, 105, 105, 255, 165, 165, 165, 255, 235, 235, 235, 255]);
+  const t = new THREE.DataTexture(d, 6, 1, THREE.RGBAFormat);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.needsUpdate = true;
   return t;
@@ -754,12 +760,20 @@ function frame() {
   controls.update();
   renderer.render(scene, camera);
 }
+let fitted = 0;
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
   if (!w || !h) return;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
+  // en pantallas angostas (celular vertical) alejar la cámara para que entre el bloque
+  const want = 6.2 * Math.max(1, 0.85 / camera.aspect);
+  if (!fitted || Math.abs(fitted - want) > 0.01) {
+    const d = camera.position.clone().sub(controls.target);
+    if (!fitted || Math.abs(d.length() - fitted) < 0.05) camera.position.copy(controls.target).add(d.setLength(want));
+    fitted = want;
+  }
 }
 new ResizeObserver(resize).observe(stage);
 
@@ -922,6 +936,8 @@ async function offerFile(filename, blob) {
 }
 $("#btn-save").addEventListener("click", () => offerFile(slug() + ".json", new Blob([JSON.stringify(projectData())], { type: "application/json" })));
 $("#btn-open").addEventListener("click", () => $("#file-open").click());
+$("#btn-save2").addEventListener("click", () => $("#btn-save").click());
+$("#btn-open2").addEventListener("click", () => $("#file-open").click());
 $("#file-open").addEventListener("change", async e => {
   const f = e.target.files[0]; e.target.value = "";
   if (!f) return;
@@ -959,6 +975,9 @@ const VIEW_SETS = {
 };
 const PHOTO = 1024;
 let photoRenderer = null;
+const photoLight = new THREE.DirectionalLight(0xffffff, 0.9);
+photoLight.visible = false;
+scene.add(photoLight, photoLight.target);
 function getPhotoRenderer() {
   if (!photoRenderer) {
     photoRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -975,12 +994,18 @@ function applyStyle(style) {
   const saved = { mat: mesh.material, bg: scene.background, tt: turntable.visible, ring: ring.visible, wire: clayMat.wireframe };
   ring.visible = false; turntable.visible = false; clayMat.wireframe = false;
   scene.background = new THREE.Color(style === "arcilla" ? 0xf1f0ec : 0xffffff);
-  if (style === "boceto") { mesh.material = toonMat; outline.visible = true; outlineUniform.value = geo.boundingSphere.radius * 0.011; }
+  const lights = [hemi.intensity, keyLight.intensity, photoLight.intensity];
+  if (style === "boceto") {
+    // pocas luces para que el sombreado en escalones marque cada cara y cada relieve
+    mesh.material = toonMat; outline.visible = true; outlineUniform.value = geo.boundingSphere.radius * 0.011;
+    hemi.intensity = 0.22; keyLight.intensity = 0; photoLight.intensity = 0.8;
+  }
   else if (style === "silueta") mesh.material = silMat;
   else shadowPlane.visible = true;
   return () => {
     mesh.material = saved.mat; scene.background = saved.bg; turntable.visible = saved.tt; ring.visible = saved.ring;
     clayMat.wireframe = saved.wire; outline.visible = false; shadowPlane.visible = false;
+    [hemi.intensity, keyLight.intensity, photoLight.intensity] = lights;
   };
 }
 
@@ -993,9 +1018,16 @@ function niceBar(pxPerCm, maxPx) {
 
 function shoot(label, cam, isOrtho, half, angleText) {
   const r = getPhotoRenderer();
-  cam.add(headLight);
+  // luz que sigue a la cámara de la foto, desde arriba a la izquierda, para que se lea el relieve
+  const center = geo.boundingBox.getCenter(new THREE.Vector3());
+  const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+  const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+  photoLight.position.copy(cam.position).addScaledVector(camUp, 3).addScaledVector(camRight, -2.5);
+  photoLight.target.position.copy(center);
+  photoLight.target.updateMatrixWorld();
+  photoLight.visible = true; headLight.visible = false;
   r.render(scene, cam);
-  camera.add(headLight);
+  photoLight.visible = false; headLight.visible = true;
   const c = document.createElement("canvas");
   c.width = c.height = PHOTO;
   const g = c.getContext("2d");
@@ -1085,7 +1117,8 @@ function contactSheet(shots) {
   const b = geo.boundingBox, k = cmPerUnit();
   const size = `${fmt((b.max.x - b.min.x) * k)} × ${fmt((b.max.y - b.min.y) * k)} × ${fmt((b.max.z - b.min.z) * k)} cm`;
   const date = new Date().toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" });
-  g.fillText(`Boceto · ${shots.length} vistas · ${size} · bloque ${S.dims.map(fmt).join("×")} cm · ${date}`, pad, 106);
+  const styleName = { boceto: "Boceto", arcilla: "Arcilla", silueta: "Silueta" }[S.shotStyle];
+  g.fillText(`${styleName} · ${shots.length} vistas · ${size} · bloque ${S.dims.map(fmt).join("×")} cm · ${date}`, pad, 106);
   shots.forEach((s, i) => {
     const x = pad + (i % cols) * (cell + gap), y = head + Math.floor(i / cols) * (cell + gap);
     g.drawImage(s.canvas, x, y, cell, cell);
@@ -1172,7 +1205,7 @@ frame();
 if (restored) toast("Se recuperó tu última escultura");
 
 // para pruebas automáticas
-window.__taller = { S, dab: (x, y, z, t, s) => dab(x, y, z, t, s || 1), get P() { return P; }, get vCount() { return vCount; }, takePhotos, VIEW_SETS, undo, redo, pushUndo, setBlock, setTool };
+window.__taller = { S, dab: (x, y, z, t, s) => { applyAt(new THREE.Vector3(x, y, z), t, s || 1); }, get P() { return P; }, get vCount() { return vCount; }, takePhotos, VIEW_SETS, undo, redo, pushUndo, setBlock, setTool };
 })();
 </script>
 <!--APP-END-->
